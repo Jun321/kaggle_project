@@ -70,7 +70,6 @@ def train_and_analyse(_X, _y, features):
 	lasso = LassoCV(cv=cv_l, n_jobs=2, normalize=True, tol=0.0001, max_iter=100000)
 	lasso.fit(X, Y)
 	ranks["Lasso"] = rank_to_dict(np.abs(lasso.coef_), features)
-	print(lasso.alpha_)
 	
 	rlasso = RandomizedLasso(alpha=lasso.alpha_, random_state=42)
 	rlasso.fit(X, Y)
@@ -80,7 +79,7 @@ def train_and_analyse(_X, _y, features):
 	rfe.fit(X,Y)
 	ranks["RFE"] = rank_to_dict(np.array(rfe.ranking_).astype(float), features, order=-1)
 
-	rf = RandomForestRegressor(n_estimators=20)
+	rf = RandomForestRegressor(n_estimators=500)
 	rf.fit(X,Y)
 	ranks["RF"] = rank_to_dict(rf.feature_importances_, features)
 
@@ -104,7 +103,7 @@ def train_and_analyse(_X, _y, features):
 	methods = sorted(ranks.keys())
 	ranks["Mean"] = r
 	methods.append("Mean")
-
+	
 	return pd.DataFrame(ranks)
 
 
