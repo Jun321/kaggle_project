@@ -2,28 +2,30 @@ import pandas as pd
 import numpy as np 
 
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.style.use('ggplot')
 import pylab as p
 
 from errno import EEXIST
 from os import makedirs,path
 
 from sklearn.preprocessing import MinMaxScaler
+from sklearn import cross_validation
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import RFE, f_regression
-from sklearn.linear_model import (LinearRegression, Ridge, 
-                                  Lasso, RandomizedLasso)
-from minepy import MINE
+from sklearn.linear_model import (LinearRegression, LassoCV, RidgeCV, RandomizedLasso)
+#from minepy import MINE
 
 import util as ut
 
 
 def comprehensive_features_analyse(_df, store_item_nbrs):
 	df = _df.copy()
-	p.figure()
 	X, y = ut.get_train_data(df)
 	feature_list = X.columns.values[2:]
 	importance_value = np.zeros(len(feature_list))
-	total = 0
+	total_weight = 0
+	total_rank = pd.DataFrame()
 	for sno, ino in store_item_nbrs:
 		if(sno == 35):
 			continue
@@ -32,51 +34,67 @@ def comprehensive_features_analyse(_df, store_item_nbrs):
 		y_1 = y[X_1.index.values]
 		X_1 = ut.get_processed_X(X_1.values)
 		y_1 = y_1.values
+		weight = y_1[y_1 > 0].shape[0]
+		total_weight += weight
 		features = feature_list
-		train_and_analyse(X_1, y_1, features)
+		rank = train_and_analyse(X_1, y_1, features)
+		if(len(total_rank) == 0):
+			total_rank = rank
+		total_rank += rank * weight
+		print('done')
+	total_rank /= total_weight
+	total_rank.plot.barh(stacked=True)
+	total_rank.to_pickle('total_rank')
+	plt.show()
+	plt.close()
 
 def train_and_analyse(_X, _y, features):
 	X = _X
 	Y = _y
-
+	cv_l = cross_validation.KFold(X.shape[0], n_folds=10,
+								shuffle=True, random_state=1)
 	ranks = {}
 
 	lr = LinearRegression(normalize=True)
 	lr.fit(X, Y)
 	ranks["Linear reg"] = rank_to_dict(np.abs(lr.coef_), features)
+	
 
-	ridge = Ridge()
+	ridge = RidgeCV(cv=cv_l)
 	ridge.fit(X, Y)
 	ranks["Ridge"] = rank_to_dict(np.abs(ridge.coef_), features)
-
-	lasso = Lasso(alpha=.005)
+	
+	# Run the RandomizedLasso: we use a paths going down to .1*alpha_max
+    # to avoid exploring the regime in which very noisy variables enter
+    # the model
+	lasso = LassoCV(cv=cv_l, n_jobs=2, normalize=True, tol=0.0001, max_iter=100000)
 	lasso.fit(X, Y)
 	ranks["Lasso"] = rank_to_dict(np.abs(lasso.coef_), features)
-
-	rlasso = RandomizedLasso(alpha=.001, max_iter=500000)
+	print(lasso.alpha_)
+	
+	rlasso = RandomizedLasso(alpha=lasso.alpha_, random_state=42)
 	rlasso.fit(X, Y)
-	print(rlasso.scores_)
 	ranks["Stability"] = rank_to_dict(np.abs(rlasso.scores_), features)
-
-	rfe = RFE(lr, n_features_to_select=5)
+	
+	rfe = RFE(lr, n_features_to_select=1)
 	rfe.fit(X,Y)
 	ranks["RFE"] = rank_to_dict(np.array(rfe.ranking_).astype(float), features, order=-1)
 
-	rf = RandomForestRegressor()
+	rf = RandomForestRegressor(n_estimators=20)
 	rf.fit(X,Y)
 	ranks["RF"] = rank_to_dict(rf.feature_importances_, features)
 
 	f, pval  = f_regression(X, Y, center=True)
 	ranks["Corr."] = rank_to_dict(np.nan_to_num(f), features)
 
-	mine = MINE()
-	mic_scores = []
-	for i in range(X.shape[1]):
-	    mine.compute_score(X[:,i], Y)
-	    m = mine.mic()
-	    mic_scores.append(m)
-	 
-	ranks["MIC"] = rank_to_dict(mic_scores, features) 
+	#mine = MINE()
+	#mic_scores = []
+	#for i in range(X.shape[1]):
+	#    mine.compute_score(X[:,i], Y)
+	#    m = mine.mic()
+	#    mic_scores.append(m)
+	# 
+	#ranks["MIC"] = rank_to_dict(mic_scores, features) 
 
 	r = {}
 	for name in features:
@@ -87,7 +105,7 @@ def train_and_analyse(_X, _y, features):
 	ranks["Mean"] = r
 	methods.append("Mean")
 
-	print(pd.DataFrame(ranks))
+	return pd.DataFrame(ranks)
 
 
 def f_regression_feature_analyse(_df, store_item_nbrs):
