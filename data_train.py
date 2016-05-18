@@ -34,7 +34,7 @@ def train_and_get_result(_df, _dft,  store_item_nbrs, model, total_features):
 	result = pd.concat(RES)
 	return result
 
-def train_and_get_test(_df, store_item_nbrs, model, total_features):
+def train_and_get_test(_df, store_item_nbrs, model, total_features, total_coef):
 	df = _df.copy()
 	regrs = []
 	tests = []
@@ -50,7 +50,7 @@ def train_and_get_test(_df, store_item_nbrs, model, total_features):
 
 		X_train = X_train[total_features[total].tolist()]
 		
-		regr = ut.get_regression_model(model, len(X_train))
+		regr = ut.get_regression_model(model, len(X_train), total_coef[total].tolist())
 
 		regr.fit(ut.get_processed_X(X_train.values), y_train.values)
 		print('done, ', total)

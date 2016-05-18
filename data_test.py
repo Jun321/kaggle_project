@@ -3,7 +3,7 @@ import pandas as pd
 import util as ut
 from sklearn.metrics import r2_score
 
-def test_and_get_res(regrs, tests, total_features):
+def test_and_get_res(regrs, tests, total_features, total_coef):
 	rmse_total = 0
 	se_total = 0
 	num_items = 0
@@ -18,7 +18,8 @@ def test_and_get_res(regrs, tests, total_features):
 		y_test = y_test[X_test.index.values]
 
 		X_test = X_test[total_features[num_items].tolist()]
-
+		X_test = X_test * total_coef[num_items]
+		print(X_test.shape)
 		prediction = regr.predict(ut.get_processed_X(X_test.values))
 		prediction = np.maximum(prediction, 0.)
 		rmse = np.sqrt(((y_test.values - prediction) ** 2).mean())

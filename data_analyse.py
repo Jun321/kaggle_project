@@ -27,6 +27,7 @@ def comprehensive_features_analyse(_df, store_item_nbrs):
 	total_weight = 0
 	total_rank = pd.DataFrame()
 	total_features = []
+	total_coef = []
 	total = 0
 	for sno, ino in store_item_nbrs:
 		if(sno == 35):
@@ -39,36 +40,37 @@ def comprehensive_features_analyse(_df, store_item_nbrs):
 		weight = y_1[y_1 > 0].shape[0]
 		total_weight += weight
 		features = feature_list
-		rank, selection_feature = train_and_analyse(X_1, y_1, features)
+		rank, selection_feature, coef = train_and_analyse(X_1, y_1, features)
 		if(len(total_rank) == 0):
 			total_rank = rank
 		total_features.append(selection_feature)
+		total_coef.append(coef)
 		total_rank += rank * weight
 		total += 1
 		print('done', total)
-	total_rank /= total_weight
+	# total_rank /= total_weight
 	# total_rank.plot.barh(stacked=True)
-	total_rank.to_pickle('total_rank')
+	# total_rank.to_pickle('total_rank')
 	# plt.show()
 	# plt.close()
 
-	return total_features
+	return total_features, total_coef
 
 def train_and_analyse(_X, _y, features):
 	X = _X
 	Y = _y
-	cv_l = cross_validation.KFold(X.shape[0], n_folds=10,
+	cv_l = cross_validation.KFold(X.shape[0], n_folds=5,
 								shuffle=True, random_state=1)
 	ranks = {}
 
-	lr = LinearRegression(normalize=True)
-	lr.fit(X, Y)
-	ranks["Linear reg"] = rank_to_dict(np.abs(lr.coef_), features)
+	# lr = LinearRegression(normalize=True)
+	# lr.fit(X, Y)
+	# ranks["Linear reg"] = rank_to_dict(np.abs(lr.coef_), features)
 	
 
-	ridge = RidgeCV(cv=cv_l)
-	ridge.fit(X, Y)
-	ranks["Ridge"] = rank_to_dict(np.abs(ridge.coef_), features)
+	# ridge = RidgeCV(cv=cv_l)
+	# ridge.fit(X, Y)
+	# ranks["Ridge"] = rank_to_dict(np.abs(ridge.coef_), features)
 	
 	# Run the RandomizedLasso: we use a paths going down to .1*alpha_max
     # to avoid exploring the regime in which very noisy variables enter
@@ -81,40 +83,41 @@ def train_and_analyse(_X, _y, features):
 	rlasso.fit(X, Y)
 	ranks["Stability"] = rank_to_dict(np.abs(rlasso.scores_), features)
 	
-	rfe = RFE(lr, n_features_to_select=1)
-	rfe.fit(X,Y)
-	ranks["RFE"] = rank_to_dict(np.array(rfe.ranking_).astype(float), features, order=-1)
+	# rfe = RFE(lr, n_features_to_select=1)
+	# rfe.fit(X,Y)
+	# ranks["RFE"] = rank_to_dict(np.array(rfe.ranking_).astype(float), features, order=-1)
 
-	rf = RandomForestRegressor(n_estimators=500)
-	rf.fit(X,Y)
-	ranks["RF"] = rank_to_dict(rf.feature_importances_, features)
+	# rf = RandomForestRegressor(n_estimators=400)
+	# rf.fit(X,Y)
+	# ranks["RF"] = rank_to_dict(rf.feature_importances_, features)
 
-	f, pval  = f_regression(X, Y, center=True)
-	ranks["Corr."] = rank_to_dict(np.nan_to_num(f), features)
+	# f, pval  = f_regression(X, Y, center=True)
+	# ranks["Corr."] = rank_to_dict(np.nan_to_num(f), features)
 
-	mine = MINE()
-	mic_scores = []
-	for i in range(X.shape[1]):
-	   mine.compute_score(X[:,i], Y)
-	   m = mine.mic()
-	   mic_scores.append(m)
+	# mine = MINE()
+	# mic_scores = []
+	# for i in range(X.shape[1]):
+	#    mine.compute_score(X[:,i], Y)
+	#    m = mine.mic()
+	#    mic_scores.append(m)
 	
-	ranks["MIC"] = rank_to_dict(mic_scores, features) 
+	# ranks["MIC"] = rank_to_dict(mic_scores, features) 
 
-	r = {}
-	for name in features:
-	    r[name] = round(np.mean([ranks[method][name] 
-	                             for method in ranks.keys()]), 2)
+	# r = {}
+	# for name in features:
+	#     r[name] = round(np.mean([ranks[method][name] 
+	#                              for method in ranks.keys()]), 2)
 	 
-	methods = sorted(ranks.keys())
-	ranks["Mean"] = r
-	methods.append("Mean")
+	# methods = sorted(ranks.keys())
+	# ranks["Mean"] = r
+	# methods.append("Mean")
 	
 	ranks = pd.DataFrame(ranks)
 
-	selection_feature = ranks[ranks.Mean > 0.12].index.values
-
-	return ranks, selection_feature
+	selection_feature = ranks[ranks.Stability > 0.2].index.values
+	coef = ranks[ranks.Stability > 0.2].Stability.values
+	print(selection_feature.shape, coef.shape)
+	return ranks, selection_feature, coef
 
 
 def f_regression_feature_analyse(_df, store_item_nbrs):
@@ -173,7 +176,7 @@ def draw_total_average_importance(importance_value, feature_list):
 	p.savefig(pic_name, bbox_inches='tight')
 	plt.close()
 
-def rank_to_dict(ranks, names, order=1):
+def rank_to_dict(ranks, names, order=1, ratio=1):
     minmax = MinMaxScaler()
     ranks = minmax.fit_transform(order*np.array([ranks]).T).T[0]
     ranks = map(lambda x: round(x, 2), ranks)
