@@ -40,7 +40,7 @@ def get_preprocessed_data(_df, weather_df, key_df):
 	df = pd.merge(df, holiday_names, on='date2', how = 'left')
 	df.loc[df.holiday_name.isnull(), "holiday_name"] = ""
 
-	for holiday in set(df.holiday_name.values):
+	for holiday in set(holiday_names.holiday_name.values):
 		if(holiday != ""):
 			df[holiday] = df['holiday_name'] == holiday
 			df[holiday] = np.where(df[holiday], 1, 0)

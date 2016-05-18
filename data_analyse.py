@@ -14,7 +14,7 @@ from sklearn import cross_validation
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import RFE, f_regression
 from sklearn.linear_model import (LinearRegression, LassoCV, RidgeCV, RandomizedLasso)
-#from minepy import MINE
+from minepy import MINE
 
 import util as ut
 
@@ -26,6 +26,8 @@ def comprehensive_features_analyse(_df, store_item_nbrs):
 	importance_value = np.zeros(len(feature_list))
 	total_weight = 0
 	total_rank = pd.DataFrame()
+	total_features = []
+	total = 0
 	for sno, ino in store_item_nbrs:
 		if(sno == 35):
 			continue
@@ -37,16 +39,20 @@ def comprehensive_features_analyse(_df, store_item_nbrs):
 		weight = y_1[y_1 > 0].shape[0]
 		total_weight += weight
 		features = feature_list
-		rank = train_and_analyse(X_1, y_1, features)
+		rank, selection_feature = train_and_analyse(X_1, y_1, features)
 		if(len(total_rank) == 0):
 			total_rank = rank
+		total_features.append(selection_feature)
 		total_rank += rank * weight
-		print('done')
+		total += 1
+		print('done', total)
 	total_rank /= total_weight
-	total_rank.plot.barh(stacked=True)
+	# total_rank.plot.barh(stacked=True)
 	total_rank.to_pickle('total_rank')
-	plt.show()
-	plt.close()
+	# plt.show()
+	# plt.close()
+
+	return total_features
 
 def train_and_analyse(_X, _y, features):
 	X = _X
@@ -67,7 +73,7 @@ def train_and_analyse(_X, _y, features):
 	# Run the RandomizedLasso: we use a paths going down to .1*alpha_max
     # to avoid exploring the regime in which very noisy variables enter
     # the model
-	lasso = LassoCV(cv=cv_l, n_jobs=2, normalize=True, tol=0.0001, max_iter=100000)
+	lasso = LassoCV(cv=cv_l, n_jobs=2, normalize=True, tol=0.0001, max_iter=170000)
 	lasso.fit(X, Y)
 	ranks["Lasso"] = rank_to_dict(np.abs(lasso.coef_), features)
 	
@@ -86,14 +92,14 @@ def train_and_analyse(_X, _y, features):
 	f, pval  = f_regression(X, Y, center=True)
 	ranks["Corr."] = rank_to_dict(np.nan_to_num(f), features)
 
-	#mine = MINE()
-	#mic_scores = []
-	#for i in range(X.shape[1]):
-	#    mine.compute_score(X[:,i], Y)
-	#    m = mine.mic()
-	#    mic_scores.append(m)
-	# 
-	#ranks["MIC"] = rank_to_dict(mic_scores, features) 
+	mine = MINE()
+	mic_scores = []
+	for i in range(X.shape[1]):
+	   mine.compute_score(X[:,i], Y)
+	   m = mine.mic()
+	   mic_scores.append(m)
+	
+	ranks["MIC"] = rank_to_dict(mic_scores, features) 
 
 	r = {}
 	for name in features:
@@ -104,7 +110,11 @@ def train_and_analyse(_X, _y, features):
 	ranks["Mean"] = r
 	methods.append("Mean")
 	
-	return pd.DataFrame(ranks)
+	ranks = pd.DataFrame(ranks)
+
+	selection_feature = ranks[ranks.Mean > 0.12].index.values
+
+	return ranks, selection_feature
 
 
 def f_regression_feature_analyse(_df, store_item_nbrs):

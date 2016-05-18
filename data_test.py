@@ -1,25 +1,29 @@
 import numpy as np 
 import pandas as pd 
 import util as ut
+from sklearn.metrics import r2_score
 
-def test_and_get_res(regrs, tests):
+def test_and_get_res(regrs, tests, total_features):
 	rmse_total = 0
 	se_total = 0
 	num_items = 0
 	num_test = 0
+	total_R_square = 0
 
 	for regr, df_test in zip(regrs, tests):
 		X_test, y_test = ut.get_train_data(df_test)
 		X_test = X_test.drop(['store_nbr','item_nbr'], axis=1)
 		y_test = y_test[X_test.index.values]
 
-		X_test = X_test[ut.get_feature_list()]
+		X_test = X_test[total_features[num_items].tolist()]
 
 		prediction = regr.predict(ut.get_processed_X(X_test.values))
 		prediction = np.maximum(prediction, 0.)
 		rmse = np.sqrt(((y_test.values - prediction) ** 2).mean())
 		se = ((y_test.values - prediction) ** 2).sum()
 
+		total_R_square += r2_score(y_test.values, prediction)
+		print(r2_score(y_test.values, prediction))
 		rmse_total += rmse
 		se_total += se
 		num_items += 1
@@ -31,3 +35,4 @@ def test_and_get_res(regrs, tests):
 	print('num_items: ', num_items, 'len_of_test: ', num_test)
 	print('Average rmse: ', rmse_total / num_items)
 	print('Average se: ', se_total / num_test)
+	print('Average r-square: ', total_R_square/ num_items)

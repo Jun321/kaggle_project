@@ -5,7 +5,7 @@ import random
 from sklearn import cross_validation
 from sklearn.linear_model import LinearRegression, LassoCV, RidgeCV
 from sklearn.neighbors import KNeighborsRegressor
-from sklearn.svm import SVR
+from sklearn import ensemble
 from sklearn.preprocessing import PolynomialFeatures, MinMaxScaler
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest, f_regression
@@ -36,67 +36,6 @@ def get_random_test_and_train(_df):
 	df_train = df.drop(df.index[rows])
 	return df_test, df_train
 
-
-def get_feature_list():
-	# features = ['date2j', 'weekday', 'day',
-	#                    'month', 'year', 'is_weekend',
-	#                    'ThanksgivingDay', 'preciptotal', 'tavg',
-	#                    'cold', 'fall', 'winter', 
-	#                    'spring', 'summer'] 
-	features = ['date2j',
-	'weekday', 
-	'day', 
-	'month',
-	'is_2012',
-	'is_2013',
-	'is_2014', 
-	'is_weekend', 
-	'is_holiday',
-	'is_holiday_weekday', 
-	'is_holiday_weekend',
-	'NewYearsEve', 
-	'IndependenceDay', 
-	'BlackFridayM3', 
-	'BlackFriday',
-	'LaborDay', 
-	'VeteransDay', 
-	'ValentinesDay', 
-	'BlackFriday2',
-	'ColumbusDay', 
-	'FathersDay', 
-	'ChristmasEve', 
-	'PresidentsDay',
-	'BlackFriday1', 
-	'NewYearsDay', 
-	'MemorialDay', 
-	'MothersDay',
-	'BlackFridayM2', 
-	'ThanksgivingDay', 
-	'BlackFriday3', 
-	'Halloween',
-	'EasterSunday', 
-	'MartinLutherKingDay', 
-	'high_precip',
-	'preciptotal', 
-	'snowfall', 
-	'high_snow', 
-	'avgspeed', 
-	'windy',
-	'temp_missing', 
-	'tavg', 
-	'hot', 
-	'cold', 
-	'frigid', 
-	'thunder', 
-	'snowcode',
-	'raincode', 
-	'fall', 
-	'winter', 
-	'spring', 
-	'summer']
-
-	return features
-
 def get_regression_model(model, length):
 	cv_l = cross_validation.KFold(length, n_folds=10,
 								shuffle=True, random_state=1)
@@ -104,8 +43,9 @@ def get_regression_model(model, length):
 		regr = LinearRegression()
 	elif model == 'RidgeCV':
 		regr = RidgeCV(cv=cv_l)
-	elif model == 'SVR':
-		regr = SVR()
+	elif model == 'GradientBoost':
+		params = {'n_estimators': 500, 'max_depth': 4, 'min_samples_split': 1, 'learning_rate': 0.01, 'loss': 'ls'}
+		regr = ensemble.GradientBoostingRegressor(**params)
 	elif model == 'LassoCV':
 		regr = LassoCV(cv=cv_l, n_jobs=2, normalize=True, tol=0.0001, max_iter=100000)
 	elif model == 'KNeighborsRegressor':
