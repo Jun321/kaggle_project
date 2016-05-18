@@ -12,6 +12,8 @@ def test_and_get_res(regrs, tests, total_features):
 
 	for regr, df_test in zip(regrs, tests):
 		X_test, y_test = ut.get_train_data(df_test)
+		sno = set(X_test.store_nbr.values)
+		ino = set(X_test.item_nbr.values)
 		X_test = X_test.drop(['store_nbr','item_nbr'], axis=1)
 		y_test = y_test[X_test.index.values]
 
@@ -23,7 +25,8 @@ def test_and_get_res(regrs, tests, total_features):
 		se = ((y_test.values - prediction) ** 2).sum()
 
 		total_R_square += r2_score(y_test.values, prediction)
-		print(r2_score(y_test.values, prediction))
+		if((r2_score(y_test.values, prediction).item() < 0.0) | (r2_score(y_test.values, prediction).item() > 0.8)):
+			print(r2_score(y_test.values, prediction), 'sno: {}, ino: {}, features: {}'.format(sno, ino, total_features[num_items].tolist()))
 		rmse_total += rmse
 		se_total += se
 		num_items += 1
