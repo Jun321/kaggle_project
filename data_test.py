@@ -3,7 +3,7 @@ import pandas as pd
 import util as ut
 from sklearn.metrics import r2_score
 
-def test_and_get_res(regrs, tests, total_features, total_coef):
+def test_and_get_res(regrs, tests, total_features):
 	rmse_total = 0
 	se_total = 0
 	num_items = 0
@@ -17,9 +17,7 @@ def test_and_get_res(regrs, tests, total_features, total_coef):
 		X_test = X_test.drop(['store_nbr','item_nbr'], axis=1)
 		y_test = y_test[X_test.index.values]
 
-		X_test = X_test[total_features[num_items].tolist()]
-		X_test = X_test * total_coef[num_items]
-		print(X_test.shape)
+		X_test = X_test[ut.get_features()]
 		prediction = regr.predict(ut.get_processed_X(X_test.values))
 		prediction = np.maximum(prediction, 0.)
 		rmse = np.sqrt(((y_test.values - prediction) ** 2).mean())
@@ -27,7 +25,7 @@ def test_and_get_res(regrs, tests, total_features, total_coef):
 
 		total_R_square += r2_score(y_test.values, prediction)
 		if((r2_score(y_test.values, prediction).item() < 0.0) | (r2_score(y_test.values, prediction).item() > 0.8)):
-			print(r2_score(y_test.values, prediction), 'sno: {}, ino: {}, features: {}'.format(sno, ino, total_features[num_items].tolist()))
+			print(r2_score(y_test.values, prediction), 'sno: {}, ino: {}, features: {}'.format(sno, ino, 'InUtil'))
 		rmse_total += rmse
 		se_total += se
 		num_items += 1

@@ -104,7 +104,7 @@ else:
 	# evaluate the importance and find the date give the more importance than weather
 	# ------------To Run need to uncomment the underline code
 	#
-	total_features, total_coef = da.comprehensive_features_analyse(df_train, store_item_nbrs)
+	total_features = da.comprehensive_features_analyse(df_train, store_item_nbrs)
 	print(total_features)
 	#
 	#-------------------------------------------------------------
@@ -117,12 +117,12 @@ else:
 	# RMSLE: https://www.kaggle.com/c/walmart-recruiting-sales-in-stormy-weather/details/evaluation
 	# select the model to run and check score in choice 1
 	# find knnRegre have a good score
-	# RES = dtr.train_and_get_result(df_train, df_test, store_item_nbrs, 'KNeighborsRegressor', total_features)
+	# RES = dtr.train_and_get_result(df_train, df_test, store_item_nbrs, 'RandomForest', total_features)
 	# tic4 = timeit.default_timer()
 	# print('Train Time', tic4 - tic3)
 	# ------------To Run TEST need to uncomment the underline 2 codes
-	regrs, tests = dtr.train_and_get_test(df_train, store_item_nbrs, 'SVR', total_features, total_coef)
-	dte.test_and_get_res(regrs, tests, total_features, total_coef)
+	regrs, tests = dtr.train_and_get_test(df_train, store_item_nbrs, 'RandomForest', total_features)
+	dte.test_and_get_res(regrs, tests, total_features)
 	tic4_1 = timeit.default_timer()
 	# print('Train Time', tic4_1 - tic3)
 	#-------------------------------------------------------------
@@ -130,7 +130,7 @@ else:
 	# after submission:
 	# knn have a score of 0.09758 and in 31 place
 	# the other will provided after check and improvement
-	# ds.submission_to_file('submission_KNeighborsRegressor', RES, store_item_nbrs)
+	# ds.submission_to_file('submission_RandomForest2', RES, store_item_nbrs)
 	# tic5 = timeit.default_timer()
 	# print('Submission Time', tic5 - tic4)
 	# print('Total Time', tic5 - tic0)
