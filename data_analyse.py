@@ -20,6 +20,8 @@ from minepy import MINE
 import util as ut
 
 
+#X['is_BlackFriday_around'] = X.holiday_name.map(lambda x: 1 if (x in ['BlackFriday2','BlackFridayM2', 'BlackFridayM3', 'BlackFriday3', 'BlackFriday', 'BlackFriday1']) else 0)
+
 def comprehensive_features_analyse(_df, store_item_nbrs):
 	df = _df.copy()
 	plt.figure(figsize=(16, 26))
